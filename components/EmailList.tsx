@@ -60,8 +60,8 @@ export default function EmailList() {
     }, 300);
   };
 
-  const handleAddToTodoist = async (email: Email) => {
-    const task = emailToTodoistTask(email);
+  const handleAddToTodoist = async (email: Email, dueDate?: string) => {
+    const task = emailToTodoistTask(email, dueDate);
     const res = await fetch("/api/todoist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

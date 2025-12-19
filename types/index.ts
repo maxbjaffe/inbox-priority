@@ -2,6 +2,7 @@ export interface EmailAnalysis {
   urgency_score: number;
   is_urgent: boolean;
   action_item: string;
+  summary: string;
   suggested_due: string | null;
   category: "urgent" | "school" | "unsubscribe_candidate" | "normal";
 }

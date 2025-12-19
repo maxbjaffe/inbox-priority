@@ -5,7 +5,8 @@ export async function analyzeEmail(email: Email): Promise<EmailAnalysis> {
 {
   "urgency_score": 1-5 (5 = most urgent),
   "is_urgent": boolean (true if score >= 4),
-  "action_item": "extracted action the recipient needs to take",
+  "action_item": "extracted action the recipient needs to take (1 sentence)",
+  "summary": "2-3 sentence summary of what this email is about",
   "suggested_due": "ISO date if deadline detected, null otherwise",
   "category": "urgent" | "school" | "unsubscribe_candidate" | "normal"
 }
@@ -56,6 +57,7 @@ Body: ${email.snippet}`;
       urgency_score: 2,
       is_urgent: false,
       action_item: "Review email",
+      summary: email.snippet.slice(0, 200),
       suggested_due: null,
       category: "normal",
     };
@@ -76,6 +78,7 @@ export async function analyzeEmails(emails: Email[]): Promise<Email[]> {
             urgency_score: 2,
             is_urgent: false,
             action_item: "Review email",
+            summary: email.snippet.slice(0, 200),
             suggested_due: null,
             category: "normal" as const,
           },

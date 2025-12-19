@@ -23,14 +23,21 @@ export async function createTodoistTask(task: TodoistTask): Promise<{ id: string
   return response.json();
 }
 
-export function emailToTodoistTask(email: Email): TodoistTask {
+export function emailToTodoistTask(email: Email, dueDate?: string): TodoistTask {
   const priority = email.analysis?.urgency_score === 5
     ? 4 // p1 in Todoist (reversed: 4 = highest)
     : email.analysis?.urgency_score === 4
     ? 3 // p2
     : 2; // p3
 
-  const description = `${email.analysis?.action_item || "Review this email"}
+  const summary = email.analysis?.summary || email.snippet.slice(0, 200);
+  const actionItem = email.analysis?.action_item || "Review this email";
+
+  const description = `**Action:** ${actionItem}
+
+**Summary:** ${summary}
+
+**From:** ${email.fromName} <${email.from}>
 
 ---
 📧 Open email: https://mail.google.com/mail/u/0/#inbox/${email.id}`;
@@ -39,6 +46,6 @@ export function emailToTodoistTask(email: Email): TodoistTask {
     title: email.subject,
     description,
     priority,
-    due_string: email.analysis?.suggested_due || undefined,
+    due_string: dueDate || email.analysis?.suggested_due || undefined,
   };
 }
