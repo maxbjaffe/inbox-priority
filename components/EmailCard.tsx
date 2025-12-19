@@ -6,6 +6,7 @@ import type { Email } from "@/types";
 interface EmailCardProps {
   email: Email;
   onMarkRead: (id: string) => Promise<void>;
+  onArchive: (id: string) => Promise<void>;
   onAddToTodoist: (email: Email) => Promise<void>;
 }
 
@@ -20,7 +21,7 @@ function timeAgo(dateString: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCardProps) {
+export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist }: EmailCardProps) {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [todoAdded, setTodoAdded] = useState(false);
@@ -31,6 +32,16 @@ export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCa
     setIsProcessing(true);
     try {
       await onMarkRead(email.id);
+      setIsRemoving(true);
+    } catch {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    setIsProcessing(true);
+    try {
+      await onArchive(email.id);
       setIsRemoving(true);
     } catch {
       setIsProcessing(false);
@@ -102,11 +113,24 @@ export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCa
               onClick={handleMarkRead}
               disabled={isProcessing}
               className="flex-1 flex items-center justify-center gap-1 bg-[#3a3a4e] hover:bg-[#4a4a5e] text-[#e4e4e7] px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+              title="Mark as read"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Read
+            </button>
+
+            <button
+              onClick={handleArchive}
+              disabled={isProcessing}
+              className="flex-1 flex items-center justify-center gap-1 bg-[#3a3a4e] hover:bg-[#4a4a5e] text-[#e4e4e7] px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+              title="Archive"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              Archive
             </button>
 
             <button
@@ -117,6 +141,7 @@ export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCa
                   ? "bg-green-600 text-white"
                   : "bg-[#3a3a4e] hover:bg-[#4a4a5e] text-[#e4e4e7]"
               }`}
+              title="Add to Todoist"
             >
               {todoAdded ? (
                 <>
@@ -130,7 +155,7 @@ export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCa
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  Todoist
+                  Task
                 </>
               )}
             </button>
@@ -138,6 +163,7 @@ export default function EmailCard({ email, onMarkRead, onAddToTodoist }: EmailCa
             <button
               onClick={openInGmail}
               className="flex items-center justify-center bg-[#3a3a4e] hover:bg-[#4a4a5e] text-[#e4e4e7] px-3 py-2 rounded-lg text-sm transition-colors"
+              title="Open in Gmail"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
