@@ -114,3 +114,85 @@ export async function archiveEmail(accessToken: string, messageId: string): Prom
     },
   });
 }
+
+export async function markEmailAsUnread(accessToken: string, messageId: string): Promise<void> {
+  const gmail = await getGmailClient(accessToken);
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      addLabelIds: ["UNREAD"],
+    },
+  });
+}
+
+export async function unarchiveEmail(accessToken: string, messageId: string): Promise<void> {
+  const gmail = await getGmailClient(accessToken);
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      addLabelIds: ["INBOX", "UNREAD"],
+    },
+  });
+}
+
+function decodeBase64(data: string): string {
+  // Gmail uses URL-safe base64, convert to standard base64
+  const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
+  try {
+    return Buffer.from(base64, "base64").toString("utf-8");
+  } catch {
+    return "";
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractBody(payload: any): { text: string; html: string } {
+  let text = "";
+  let html = "";
+
+  if (payload.body?.data) {
+    const decoded = decodeBase64(payload.body.data);
+    if (payload.mimeType === "text/plain") {
+      text = decoded;
+    } else if (payload.mimeType === "text/html") {
+      html = decoded;
+    }
+  }
+
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/plain" && part.body?.data) {
+        text = decodeBase64(part.body.data);
+      } else if (part.mimeType === "text/html" && part.body?.data) {
+        html = decodeBase64(part.body.data);
+      } else if (part.mimeType?.startsWith("multipart/") && part.parts) {
+        const nested = extractBody(part);
+        if (nested.text) text = nested.text;
+        if (nested.html) html = nested.html;
+      }
+    }
+  }
+
+  return { text, html };
+}
+
+export async function fetchEmailBody(accessToken: string, messageId: string): Promise<{ text: string; html: string }> {
+  const gmail = await getGmailClient(accessToken);
+
+  const response = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+    format: "full",
+  });
+
+  const payload = response.data.payload;
+  if (!payload) {
+    return { text: "", html: "" };
+  }
+
+  return extractBody(payload);
+}
