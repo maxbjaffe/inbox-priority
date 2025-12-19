@@ -1,11 +1,11 @@
 {
-  "name": "InboxPriority",
-  "short_name": "InboxPriority",
+  "name": "Mail Muncher",
+  "short_name": "Mail Muncher",
   "description": "AI-powered email triage that surfaces urgent emails",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1e1e2e",
-  "theme_color": "#1e1e2e",
+  "background_color": "#7c93c3",
+  "theme_color": "#7c93c3",
   "orientation": "portrait",
   "icons": [
     {
