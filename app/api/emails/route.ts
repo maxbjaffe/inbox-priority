@@ -7,9 +7,9 @@ export async function GET(request: Request) {
   try {
     const session = await auth();
 
-    if (!session?.accessToken) {
+    if (!session?.accessToken || session.error === "RefreshAccessTokenError") {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized", needsReauth: true },
         { status: 401 }
       );
     }
@@ -23,8 +23,10 @@ export async function GET(request: Request) {
     return NextResponse.json(analyzedEmails);
   } catch (error) {
     console.error("Error fetching emails:", error);
+    // Return more detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch emails" },
+      { error: "Failed to fetch emails", details: errorMessage },
       { status: 500 }
     );
   }
