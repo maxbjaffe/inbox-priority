@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { Email } from "@/types";
 import DueDateModal from "./DueDateModal";
 
@@ -9,6 +9,10 @@ interface EmailCardProps {
   onMarkRead: (id: string) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
   onAddToTodoist: (email: Email, dueDate?: string) => Promise<void>;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  onLongPress?: (id: string) => void;
 }
 
 function timeAgo(dateString: string): string {
@@ -22,15 +26,51 @@ function timeAgo(dateString: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist }: EmailCardProps) {
+export default function EmailCard({
+  email,
+  onMarkRead,
+  onArchive,
+  onAddToTodoist,
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onLongPress,
+}: EmailCardProps) {
   const [isRemoving, setIsRemoving] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [todoAdded, setTodoAdded] = useState(false);
   const [showDueDateModal, setShowDueDateModal] = useState(false);
 
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const isLongPress = useRef(false);
+
   const urgencyScore = email.analysis?.urgency_score || 0;
 
-  const handleMarkRead = async () => {
+  // Long press handlers
+  const handleTouchStart = useCallback(() => {
+    if (isSelectMode) return;
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      onLongPress?.(email.id);
+    }, 500);
+  }, [isSelectMode, onLongPress, email.id]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleCardClick = () => {
+    if (isSelectMode) {
+      onToggleSelect?.(email.id);
+    }
+  };
+
+  const handleMarkRead = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsProcessing(true);
     try {
       await onMarkRead(email.id);
@@ -40,7 +80,8 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
     }
   };
 
-  const handleArchive = async () => {
+  const handleArchive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsProcessing(true);
     try {
       await onArchive(email.id);
@@ -50,7 +91,8 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
     }
   };
 
-  const handleTaskClick = () => {
+  const handleTaskClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!todoAdded && !isProcessing) {
       setShowDueDateModal(true);
     }
@@ -66,7 +108,8 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
     }
   };
 
-  const openInGmail = () => {
+  const openInGmail = (e: React.MouseEvent) => {
+    e.stopPropagation();
     window.open(`https://mail.google.com/mail/u/0/#inbox/${email.id}`, "_blank");
   };
 
@@ -75,19 +118,44 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
       <div
         className={`bg-[#2a2a3e] rounded-xl p-4 shadow-lg transition-all duration-300 ${
           isRemoving ? "opacity-0 -translate-x-full" : ""
-        }`}
+        } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={handleTouchStart}
+        onMouseUp={handleTouchEnd}
+        onMouseLeave={handleTouchEnd}
+        onClick={handleCardClick}
       >
         <div className="flex items-start gap-3">
-          {/* Urgency Indicator */}
+          {/* Selection Checkbox or Urgency Indicator */}
           <div className="flex-shrink-0 pt-1">
-            {urgencyScore >= 5 && (
-              <span className="w-3 h-3 bg-red-500 rounded-full block animate-pulse" />
-            )}
-            {urgencyScore === 4 && (
-              <span className="w-3 h-3 bg-orange-500 rounded-full block" />
-            )}
-            {urgencyScore < 4 && (
-              <span className="w-3 h-3 bg-[#3a3a4e] rounded-full block" />
+            {isSelectMode ? (
+              <div
+                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                  isSelected
+                    ? "bg-blue-500 border-blue-500"
+                    : "border-[#4a4a5e] bg-transparent"
+                }`}
+              >
+                {isSelected && (
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+            ) : (
+              <>
+                {urgencyScore >= 5 && (
+                  <span className="w-3 h-3 bg-red-500 rounded-full block animate-pulse" />
+                )}
+                {urgencyScore === 4 && (
+                  <span className="w-3 h-3 bg-orange-500 rounded-full block" />
+                )}
+                {urgencyScore < 4 && (
+                  <span className="w-3 h-3 bg-[#3a3a4e] rounded-full block" />
+                )}
+              </>
             )}
           </div>
 
@@ -116,7 +184,8 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
               {email.from}
             </p>
 
-            {/* Actions */}
+            {/* Actions - hidden in select mode */}
+            {!isSelectMode && (
             <div className="flex gap-2">
               <button
                 onClick={handleMarkRead}
@@ -179,6 +248,7 @@ export default function EmailCard({ email, onMarkRead, onArchive, onAddToTodoist
                 </svg>
               </button>
             </div>
+            )}
           </div>
         </div>
       </div>

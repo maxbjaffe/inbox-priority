@@ -10,6 +10,11 @@ interface HeaderProps {
   isLoading: boolean;
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  isSelectMode?: boolean;
+  selectedCount?: number;
+  onSelectAll?: () => void;
+  onCancelSelect?: () => void;
+  allSelected?: boolean;
 }
 
 const dateRangeOptions: { value: DateRange; label: string }[] = [
@@ -27,13 +32,47 @@ export default function Header({
   onRefresh,
   isLoading,
   dateRange,
-  onDateRangeChange
+  onDateRangeChange,
+  isSelectMode = false,
+  selectedCount = 0,
+  onSelectAll,
+  onCancelSelect,
+  allSelected = false,
 }: HeaderProps) {
+  if (isSelectMode) {
+    return (
+      <header className="sticky top-0 z-10 bg-[#1e1e2e] border-b border-[#3a3a4e] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onCancelSelect}
+            className="flex items-center gap-2 text-[#e4e4e7] hover:text-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel
+          </button>
+
+          <span className="text-[#e4e4e7] font-medium">
+            {selectedCount} selected
+          </span>
+
+          <button
+            onClick={onSelectAll}
+            className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+          >
+            {allSelected ? "Deselect All" : "Select All"}
+          </button>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-10 bg-[#1e1e2e] border-b border-[#3a3a4e] px-4 py-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[#e4e4e7]">InboxPriority</h1>
+          <h1 className="text-xl font-bold text-[#e4e4e7]">Mail Muncher</h1>
           {urgentCount > 0 && (
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {urgentCount}
